@@ -31,23 +31,10 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Fix Gradle Wrapper JAR
-        run: |
-          mkdir -p gradle/wrapper
-          curl -fsSL "https://github.com/gradle/gradle/raw/v8.4/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          ls -lh gradle/wrapper/
-
-      - name: Fix gradlew
-        run: |
-          if [ ! -f gradlew ]; then
-            curl -fsSL "https://raw.githubusercontent.com/gradle/gradle/v8.4/gradlew" -o gradlew
-          fi
-          chmod +x gradlew
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.4'
 
       - name: Fix build files
         run: |
@@ -95,17 +82,8 @@ jobs:
           echo "$LOTTIE" > app/src/main/assets/ayra_orb.json
           echo "$LOTTIE" > app/src/main/assets/ayra_splash.json
 
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-          restore-keys: ${{ runner.os }}-gradle-
-
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: gradle assembleDebug --stacktrace --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.daemon=false -Xmx2g"
 
@@ -119,5 +97,4 @@ jobs:
 
       - name: Show Error on Failure
         if: failure()
-        run: |
-          find . -name "*.log" -path "*/build/*" 2>/dev/null | xargs cat 2>/dev/null | tail -50 || true
+        run: find . -name "*.log" -path "*/build/*" 2>/dev/null | xargs cat 2>/dev/null | tail -80 || true
